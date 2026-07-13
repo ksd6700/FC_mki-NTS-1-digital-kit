@@ -1,0 +1,6 @@
+build/
+dist/
+vendor/
+*.ntkdigunit
+.DS_Store
+

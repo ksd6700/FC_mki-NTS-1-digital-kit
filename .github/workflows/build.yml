@@ -1,0 +1,28 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Fetch logue SDK
+        run: |
+          git clone --depth 1 https://github.com/korginc/logue-sdk.git vendor/logue-sdk
+
+      - name: Build NTS-1 unit
+        run: |
+          make LOGUE_SDK_DIR="$PWD/vendor/logue-sdk" install
+
+      - name: Upload ntkdigunit
+        uses: actions/upload-artifact@v4
+        with:
+          name: fc_mki-ntkdigunit
+          path: dist/fc_mki.ntkdigunit
+
