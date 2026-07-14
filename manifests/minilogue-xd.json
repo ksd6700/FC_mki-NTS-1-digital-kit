@@ -1,0 +1,21 @@
+{
+    "header" :
+    {
+        "platform" : "minilogue-xd",
+        "module" : "osc",
+        "api" : "1.1-0",
+        "dev_id" : 0,
+        "prg_id" : 1983,
+        "version" : "1.0-0",
+        "name" : "FC-mki",
+        "num_param" : 6,
+        "params" : [
+            ["DUTY",   0, 100, "%"],
+            ["TRI",    0, 100, "%"],
+            ["NOISE",  0, 100, "%"],
+            ["CRUSH",  0, 100, "%"],
+            ["SUB",    0, 100, "%"],
+            ["LEVEL",  0, 100, "%"]
+        ]
+    }
+}

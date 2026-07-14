@@ -1,19 +1,37 @@
 # #############################################################################
-# KORG NTS-1 User Oscillator Makefile
+# KORG logue SDK User Oscillator Makefile
 # #############################################################################
 
 PROJECTDIR ?= $(abspath .)
+
+TARGET ?= nutekt-digital
+SUPPORTED_TARGETS := nutekt-digital minilogue-xd prologue
+
+ifeq ($(filter $(TARGET),$(SUPPORTED_TARGETS)),)
+$(error Unsupported TARGET '$(TARGET)'. Choose one of: $(SUPPORTED_TARGETS))
+endif
+
+ifeq ($(TARGET),nutekt-digital)
+MCU_MODEL := STM32F446xE
+UNIT_EXTENSION := ntkdigunit
+else ifeq ($(TARGET),minilogue-xd)
+MCU_MODEL := STM32F401xC
+UNIT_EXTENSION := mnlgxdunit
+else ifeq ($(TARGET),prologue)
+MCU_MODEL := STM32F401xC
+UNIT_EXTENSION := prlgunit
+endif
 
 # Clone KORG's logue SDK into vendor/logue-sdk, or point LOGUE_SDK_DIR at an
 # existing checkout.
 LOGUE_SDK_DIR ?= $(PROJECTDIR)/vendor/logue-sdk
 
-ifeq ($(wildcard $(LOGUE_SDK_DIR)/platform/nutekt-digital/inc/userosc.h),)
-$(error LOGUE_SDK_DIR is not set to a logue SDK checkout. Example: make LOGUE_SDK_DIR=/path/to/logue-sdk install)
+ifeq ($(wildcard $(LOGUE_SDK_DIR)/platform/$(TARGET)/inc/userosc.h),)
+$(error LOGUE_SDK_DIR is not a logue SDK checkout with support for TARGET='$(TARGET)')
 endif
 
-PLATFORMDIR ?= $(LOGUE_SDK_DIR)/platform/nutekt-digital
-INSTALLDIR ?= $(PROJECTDIR)/dist
+PLATFORMDIR ?= $(LOGUE_SDK_DIR)/platform/$(TARGET)
+INSTALLDIR ?= $(PROJECTDIR)/dist/$(TARGET)
 TOOLSDIR ?= $(LOGUE_SDK_DIR)/tools
 EXTDIR ?= $(PLATFORMDIR)/../ext
 CMSISDIR ?= $(EXTDIR)/CMSIS/CMSIS
@@ -33,7 +51,6 @@ include $(PROJECTDIR)/project.mk
 # #############################################################################
 
 MCU := cortex-m4
-MCU_MODEL := STM32F446xE
 
 GCC_TARGET := arm-none-eabi-
 GCC_BIN_PATH ?= $(TOOLSDIR)/gcc/gcc-arm-none-eabi-5_4-2016q3/bin
@@ -73,11 +90,11 @@ TOPT := -mthumb -mno-thumb-interwork -DTHUMB_NO_INTERWORKING -DTHUMB_PRESENT
 # Set targets and directories
 # #############################################################################
 
-PKGARCH := $(PROJECT).ntkdigunit
-MANIFEST := manifest.json
+PKGARCH := $(PROJECT).$(UNIT_EXTENSION)
+MANIFEST := manifests/$(TARGET).json
 PAYLOAD := payload.bin
 
-BUILDDIR := $(PROJECTDIR)/build
+BUILDDIR := $(PROJECTDIR)/build/$(TARGET)
 OBJDIR := $(BUILDDIR)/obj
 LSTDIR := $(BUILDDIR)/lst
 
@@ -200,10 +217,17 @@ clean:
 	@echo Done
 	@echo
 
+clean-all:
+	@echo Cleaning all targets
+	-rm -fR $(PROJECTDIR)/.dep $(PROJECTDIR)/build $(PROJECTDIR)/dist
+	@echo Done
+	@echo
+
 $(BUILDDIR)/$(PKGARCH): $(OBJS) $(OUTFILES) $(PROJECTDIR)/$(MANIFEST)
 	@echo Packaging to $(BUILDDIR)/$(PKGARCH)
+	@rm -fR $(BUILDDIR)/$(PROJECT)
 	@mkdir -p $(BUILDDIR)/$(PROJECT)
-	@cp -a $(PROJECTDIR)/$(MANIFEST) $(BUILDDIR)/$(PROJECT)/
+	@cp -a $(PROJECTDIR)/$(MANIFEST) $(BUILDDIR)/$(PROJECT)/manifest.json
 	@cp -a $(BUILDDIR)/$(PROJECT).bin $(BUILDDIR)/$(PROJECT)/$(PAYLOAD)
 	@cd $(BUILDDIR) && $(ZIP) $(ZIP_ARGS) $(PROJECT).zip $(PROJECT)
 	@mv $(BUILDDIR)/$(PROJECT).zip $(BUILDDIR)/$(PKGARCH)
@@ -217,4 +241,9 @@ install: $(BUILDDIR)/$(PKGARCH)
 	@echo Done
 	@echo
 
-.PHONY: all clean package install PRE_ALL POST_ALL
+all-platforms:
+	@for target in $(SUPPORTED_TARGETS); do \
+		$(MAKE) TARGET=$$target install || exit $$?; \
+	done
+
+.PHONY: all all-platforms clean clean-all package install PRE_ALL POST_ALL

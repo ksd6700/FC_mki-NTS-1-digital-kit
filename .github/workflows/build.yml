@@ -7,6 +7,13 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - nutekt-digital
+          - minilogue-xd
+          - prologue
 
     steps:
       - name: Check out
@@ -15,14 +22,24 @@ jobs:
       - name: Fetch logue SDK
         run: |
           git clone --depth 1 https://github.com/korginc/logue-sdk.git vendor/logue-sdk
+          git -C vendor/logue-sdk submodule update --init --depth 1 platform/ext/CMSIS
 
-      - name: Build NTS-1 unit
+      - name: Install ARM toolchain
         run: |
-          make LOGUE_SDK_DIR="$PWD/vendor/logue-sdk" install
+          sudo apt-get update
+          sudo apt-get install --yes gcc-arm-none-eabi libnewlib-arm-none-eabi
 
-      - name: Upload ntkdigunit
+      - name: Build ${{ matrix.target }} unit
+        run: |
+          make \
+            TARGET="${{ matrix.target }}" \
+            LOGUE_SDK_DIR="$PWD/vendor/logue-sdk" \
+            GCC_BIN_PATH=/usr/bin \
+            install
+
+      - name: Upload ${{ matrix.target }} unit
         uses: actions/upload-artifact@v4
         with:
-          name: fc_mki-ntkdigunit
-          path: dist/fc_mki.ntkdigunit
-
+          name: fc_mki-${{ matrix.target }}
+          path: dist/${{ matrix.target }}/
+          if-no-files-found: error

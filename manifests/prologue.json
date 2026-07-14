@@ -1,7 +1,7 @@
 {
     "header" :
     {
-        "platform" : "nutekt-digital",
+        "platform" : "prologue",
         "module" : "osc",
         "api" : "1.1-0",
         "dev_id" : 0,
@@ -19,4 +19,3 @@
         ]
     }
 }
-
